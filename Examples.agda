@@ -4,6 +4,8 @@ open import Data.Empty
 open import Data.Nat
 open import Data.Vec using (Vec ; [] ; _∷_)
 
+open import Function
+
 open import Relation.Binary.PropositionalEquality using (_≡_ ; refl ; trans)
 open import Relation.Nullary
 
@@ -98,8 +100,8 @@ module Examples where
 
       -- stream equality implies ≈P
 
-      complete : ∀ {A : Set}{xs ys : Stream A} → xs ≈ ys → xs ≈P ys
-      complete (eq ∷ p) = eq ∷ ♯ (complete (♭ p))
+      ≈P-complete : ∀ {A : Set}{xs ys : Stream A} → xs ≈ ys → xs ≈P ys
+      ≈P-complete (eq ∷ p) = eq ∷ ♯ (≈P-complete (♭ p))
 
       -- a stream equality that uses ≈P
 
@@ -111,6 +113,21 @@ module Examples where
 
       ≈x-trans : ∀ {A}{xs ys zs : Stream A} → xs ≈x ys → ys ≈x zs → xs ≈x zs
       ≈x-trans {A}{_ ∷ xs}(refl ∷ p) (refl ∷ p') = refl ∷ (♭ xs ≈⟨ p ⟩ p')
+
+      ≈P⇒≈x : ∀ {A}{xs ys : Stream A} → xs ≈P ys → xs ≈x ys
+      ≈P⇒≈x (refl ∷ p) = refl ∷ ♭ p
+      ≈P⇒≈x (xs ≈⟨ p ⟩ p₁) = ≈x-trans (≈P⇒≈x p) (≈P⇒≈x p₁)
+      ≈P⇒≈x (xs □) = ≈x-refl xs
+
+      -- soundness
+
+      mutual
+        ≈P-sound : ∀ {A : Set}{xs ys : Stream A} → xs ≈P ys → xs ≈ ys
+        ≈P-sound = ≈x-sound ∘ ≈P⇒≈x
+
+        ≈x-sound : ∀ {A : Set}{xs ys : Stream A} → xs ≈x ys → xs ≈ ys
+        ≈x-sound (refl ∷ p) = refl ∷ ♯ (≈P-sound p)
+
 
     -- -- all natural numbers set
 
