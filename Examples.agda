@@ -4,8 +4,6 @@ open import Data.Empty
 open import Data.Nat
 open import Data.Vec using (Vec ; [] ; _∷_)
 
-open import Function
-
 open import Relation.Binary.PropositionalEquality using (_≡_ ; refl ; trans)
 open import Relation.Nullary
 
@@ -36,19 +34,6 @@ module Examples where
     ones' : Stream ℕ
     ones' = map suc zeros
 
-    {-
-      the proof, equationally
-
-      ones' = map suc zeros
-            = map suc (zero ∷ ♯ zeros)
-            = suc zero ∷ ♯ map suc (♭ (♯ zeros))
-            = 1 ∷ ♯ map suc zeros
-            = 1 ∷ ones'
-            = 1 ∷ ones
-            = ones
-    -}
-
-
     module EqualityTake1 where
 
       -- stream equality
@@ -58,6 +43,17 @@ module Examples where
 
       ones≈ones' : ones ≈ ones'
       ones≈ones' = refl ∷ ♯ ones≈ones'
+
+      -- ≈ is a equality relation
+
+      ≈-refl : ∀ {A : Set}(xs : Stream A) → xs ≈ xs
+      ≈-refl (x ∷ xs) = refl ∷ ♯ ≈-refl (♭ xs)
+
+      ≈-sym : ∀ {A : Set}{xs ys : Stream A} → xs ≈ ys → ys ≈ xs
+      ≈-sym (refl ∷ xs') = refl ∷ ♯ ≈-sym (♭ xs')
+
+      ≈-trans : ∀ {A : Set}{xs ys zs : Stream A} → xs ≈ ys → ys ≈ zs → xs ≈ zs
+      ≈-trans (refl ∷ xys) (refl ∷ yzs) = refl ∷ ♯ ≈-trans (♭ xys) (♭ yzs)
 
     module EqualityTake2 where
 
@@ -88,8 +84,8 @@ module Examples where
 
       infix 4 _≈P_ _≈x_
       infixr 5 _∷_
-      infix 3 _≈⟨_⟩_
-      infix 2 _□
+      infixr 2 _≈⟨_⟩_
+      infix 3 _□
 
       -- a data type for equational reasoning using codata
 
@@ -123,27 +119,56 @@ module Examples where
 
       mutual
         ≈P-sound : ∀ {A : Set}{xs ys : Stream A} → xs ≈P ys → xs ≈ ys
-        ≈P-sound = ≈x-sound ∘ ≈P⇒≈x
+        ≈P-sound p = ≈x-sound (≈P⇒≈x p)
 
         ≈x-sound : ∀ {A : Set}{xs ys : Stream A} → xs ≈x ys → xs ≈ ys
         ≈x-sound (refl ∷ p) = refl ∷ ♯ (≈P-sound p)
 
+      module ≈-ReasoningTest where
 
-    -- -- all natural numbers set
+    {-
+      the proof, equationally
 
-    -- allℕ : Stream ℕ
-    -- allℕ = enum 0
-    --      where
-    --        enum : ℕ → Stream ℕ
-    --        enum n = n ∷ (♯ enum (suc n))
+      ones' = map suc zeros
+            = map suc (zero ∷ ♯ zeros)
+            = suc zero ∷ ♯ map suc (♭ (♯ zeros))
+            = 1 ∷ ♯ map suc zeros
+            = 1 ∷ ones'
+            = 1 ∷ ones
+            = ones
+    -}
 
-    -- -- describing a coinductive property
 
-    -- infix 4 _∈_
+        -- an equational proof
 
-    -- data _∈_ {A : Set} : A → Stream A → Set where
-    --   here  : ∀ {x xs} → x ∈ x ∷ xs
-    --   there : ∀ {x y xs} → (x ∈ ♭ xs) → x ∈ y ∷ xs
+        ones≈ones-≈ : ones ≈P ones'
+        ones≈ones-≈ = ones                  ≈⟨ refl ∷ ♯ (ones □)      ⟩
+                      1 ∷ ♯ ones            ≈⟨ refl ∷ ♯ (ones≈ones-≈) ⟩
+                      1 ∷ ♯ ones'           ≈⟨ refl ∷ ♯ (ones' □)     ⟩
+                      1 ∷ ♯ map suc zeros   ≈⟨ refl ∷ ♯ (ones' □)     ⟩
+                      map suc (0 ∷ ♯ zeros) ≈⟨ refl ∷ ♯ (ones' □)     ⟩
+                      map suc zeros         ≈⟨ refl ∷ ♯ (ones' □)     ⟩
+                      ones'
+                      □
 
-    -- allℕisℕ : ∀ (n : ℕ) → n ∈ allℕ
-    -- allℕisℕ n = {!!}
+        final-eq : ones ≈ ones'
+        final-eq = ≈P-sound ones≈ones-≈
+
+    -- all natural numbers set
+
+    enum : ℕ → Stream ℕ
+    enum n = n ∷ (♯ enum (suc n))
+
+    allℕ : Stream ℕ
+    allℕ = enum 0
+
+    -- describing a coinductive property
+
+    infix 4 _∈_
+
+    data _∈_ {A : Set} : A → Stream A → Set where
+      here  : ∀ {x xs} → x ∈ x ∷ xs
+      there : ∀ {x y xs} → (x ∈ ♭ xs) → x ∈ y ∷ xs
+
+    allℕisℕ : ∀ (n : ℕ) → n ∈ allℕ
+    allℕisℕ n = {!!}
