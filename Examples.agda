@@ -18,6 +18,9 @@ module Examples where
 
     -- some little functions on streams
 
+    head : ∀ {A : Set} → Stream A → A
+    head (x ∷ _) = x
+
     take : ∀ {A : Set} n → Stream A → Vec A n
     take zero (x ∷ _) = []
     take (suc n) (x ∷ xs) = x ∷ take n (♭ xs)
@@ -138,7 +141,6 @@ module Examples where
             = ones
     -}
 
-
         -- an equational proof
 
         ones≈ones-≈ : ones ≈P ones'
@@ -170,5 +172,10 @@ module Examples where
       here  : ∀ {x xs} → x ∈ x ∷ xs
       there : ∀ {x y xs} → (x ∈ ♭ xs) → x ∈ y ∷ xs
 
+    ∈-suc : ∀ {n m : ℕ} → n ∈ enum m → suc n ∈ enum (suc m)
+    ∈-suc here = here
+    ∈-suc (there p) = there (∈-suc p)
+
     allℕisℕ : ∀ (n : ℕ) → n ∈ allℕ
-    allℕisℕ n = {!!}
+    allℕisℕ zero = here
+    allℕisℕ (suc n) = there (∈-suc (allℕisℕ n))
